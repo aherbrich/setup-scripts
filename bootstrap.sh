@@ -73,7 +73,7 @@ else
   cd "$TARGET_DIR"
   git fetch origin                                                                                   1 ↵
   git reset --hard origin/main
-  git pull
+  git pull origin main
 fi
 
 # Run the main install script
