@@ -7,77 +7,106 @@ TARGET_DIR="${HOME}/setup-scripts"
 echo "Bootstrapping machine with minimal setup..."
 
 if [[ "$EUID" -eq 0 ]]; then
-  echo "Do not run this script as root or with sudo. Exiting."
-  exit 1
+    echo "Do not run this script as root or with sudo. Exiting."
+    exit 1
 fi
 
-# Function to detect OS
 detect_os() {
-  if [[ "$(uname)" == "Darwin" ]]; then
-    echo "macos"
-  elif [[ -f /etc/os-release ]]; then
-    . /etc/os-release
-    case "$ID" in
-      ubuntu) echo "ubuntu" ;;
-      amzn|amazon) echo "amazon-linux" ;;
-      *) echo "unsupported" ;;
-    esac
-  else
-    echo "unsupported"
-  fi
-}
+    local uname_out
+    uname_out="$(uname -s)"
 
-# Function to install git
-install_git() {
-  echo "Installing git..."
-  OS=$(detect_os)
-
-  case "$OS" in
-    ubuntu)
-      sudo apt-get update
-      sudo apt-get install -y git
-      ;;
-    amazon-linux)
-      sudo dnf install -y git || sudo yum install -y git
-      ;;
-    macos)
-      if ! xcode-select -p > /dev/null 2>&1; then
-        echo "Installing Xcode Command Line Tools..."
-        xcode-select --install
-        echo "Please complete the Xcode installation manually if prompted."
+    case "$uname_out" in
+        Darwin)
+        OS_NAME="macos"
+        ;;
+        Linux)
+        if [[ -f /etc/os-release ]]; then
+            . /etc/os-release
+            case "$ID" in
+            ubuntu|debian)
+                OS_NAME="$ID"
+                ;;
+            amzn|amazon)
+                OS_NAME="amazon-linux"
+                ;;
+            fedora)
+                OS_NAME="fedora"
+                ;;
+            arch)
+                OS_NAME="arch"
+                ;;
+            *)
+                echo "Unrecognized Linux distribution: $ID"
+                exit 1
+                ;;
+            esac
+        else
+            echo "Could not determine Linux distribution"
+            exit 1
+        fi
+        ;;
+        *)
+        echo "Unsupported OS: $uname_out"
         exit 1
-      fi
-      ;;
-    *)
-      echo "Unsupported OS for git installation: $OS"
-      exit 1
-      ;;
-  esac
+        ;;
+    esac
 
-  echo "Git installed successfully."
+    echo "Detected OS: $OS_NAME"
 }
 
-# Install git if not already installed
+install_git() {
+    echo "Installing git..."
+    detect_os
+    case "$OS_NAME" in
+        amazon-linux)
+        sudo dnf install -y git || sudo yum install -y git
+        ;;
+        macos)
+        if ! xcode-select -p &>/dev/null; then
+            echo "Installing Xcode Command Line Tools..."
+            xcode-select --install
+
+            # Wait until install is complete
+            until xcode-select -p &>/dev/null; do
+            echo "Waiting for Xcode Command Line Tools to finish installing..."
+            sleep 5
+            done
+
+            if ! command -v git &>/dev/null; then
+                echo "Git not found after installing Xcode Command Line Tools. Exiting."
+                exit 1
+            fi
+        fi
+        ;;
+        *)
+        echo "Unsupported OS for git installation: $OS_NAME"
+        exit 1
+        ;;
+    esac
+
+    echo "Git installed successfully."
+}
+
+# Install git if needed
 if ! command -v git &>/dev/null; then
-  install_git
+    install_git
 else
-  echo "Git is already installed."
+    echo "Git is already installed."
 fi
 
-# Clone the repository if it doesn't exist
+# Clone or update the repo
 if [ ! -d "$TARGET_DIR" ]; then
-  echo "Cloning setup scripts repository..."
-  git clone "$REPO_URL" "$TARGET_DIR"
+    echo "Cloning setup scripts repository..."
+    git clone "$REPO_URL" "$TARGET_DIR"
 else
-  echo "Repository already exists at $TARGET_DIR. Pulling latest changes..."
-  cd "$TARGET_DIR"
-  git fetch origin
-  git reset --hard origin/main
-  git pull origin main
+    echo "Repository already exists at $TARGET_DIR. Pulling latest changes..."
+    cd "$TARGET_DIR"
+    git fetch origin
+    git reset --hard origin/main
+    git pull origin main
 fi
 
-# Run the main install script
+# Run main install script
 cd "$TARGET_DIR"
-chmod +x install.sh
 echo "Bootstrapping complete. Running main install script..."
-sudo ./install.sh
+./install.sh
