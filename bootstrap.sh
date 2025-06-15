@@ -6,6 +6,11 @@ TARGET_DIR="${HOME}/setup-scripts"
 
 echo "Bootstrapping machine with minimal setup..."
 
+if [[ "$EUID" -eq 0 ]]; then
+  echo "Do not run this script as root or with sudo. Exiting."
+  exit 1
+fi
+
 # Function to detect OS
 detect_os() {
   if [[ "$(uname)" == "Darwin" ]]; then

@@ -8,8 +8,6 @@ echo "== Running setup script =="
 #############################################
 
 sanity_check() {
-  echo "== Step 0: Sanity Check =="
-
   # Detect OS
   detect_os() {
     if [[ "$(uname)" == "Darwin" ]]; then
@@ -72,8 +70,8 @@ sanity_check() {
 # -----------------------------
 # MAIN EXECUTION FLOW
 # -----------------------------
+echo "== Step 0: Sanity Check =="
 sanity_check
-echo "Step 0 (sanity check) complete. Ready to proceed."
 
 
 # Future steps go here...
