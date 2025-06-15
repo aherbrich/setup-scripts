@@ -71,6 +71,8 @@ if [ ! -d "$TARGET_DIR" ]; then
 else
   echo "Repository already exists at $TARGET_DIR. Pulling latest changes..."
   cd "$TARGET_DIR"
+  git fetch origin                                                                                   1 ↵
+  git reset --hard origin/main
   git pull
 fi
 
