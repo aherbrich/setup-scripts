@@ -80,4 +80,4 @@ fi
 cd "$TARGET_DIR"
 chmod +x install.sh
 echo "Bootstrapping complete. Running main install script..."
-./install.sh
+sudo ./install.sh
