@@ -44,7 +44,7 @@ case "$OS_NAME" in
         sudo dnf update -y
 
         log "Installing core packages"
-        sudo dnf install -y \
+        sudo dnf install --allowerasing -y \
             git \
             curl \
             vim \
